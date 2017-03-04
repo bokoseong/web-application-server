@@ -9,10 +9,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import db.DataBase;
+import model.User;
 import util.HttpRequestUtils;
 
 public class RequestHandler extends Thread {
@@ -37,11 +40,27 @@ public class RequestHandler extends Thread {
 				return;
 			}
 
-			String url = HttpRequestUtils.parseUrl(line);
+			Map<String, String> requestMap = HttpRequestUtils.parseRequestLine(line);
+			String httpMethod = requestMap.get("httpMethod");
+			String url = requestMap.get("requestURL");
 
 			while(!"".equals(line)) {
 				line = bufferedReader.readLine();
 				log.debug(line);
+			}
+
+			if (url.startsWith("/user/create") && "GET".equals(httpMethod)) {
+				int index = url.indexOf("?");
+
+				if (index >= 0) {
+					String params = url.substring(index + 1);
+					Map<String, String> paramMap = HttpRequestUtils.parseQueryString(params);
+
+					User user = new User(paramMap.get("userId"), paramMap.get("password"), paramMap.get("name"), paramMap.get("email"));
+					DataBase.addUser(user);
+				}
+
+				url = "/index.html";
 			}
 
 			DataOutputStream dos = new DataOutputStream(out);
