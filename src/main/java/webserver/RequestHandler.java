@@ -64,20 +64,33 @@ public class RequestHandler extends Thread {
 				httpRequest.setBodyParamMap(IOUtils.readData(bufferedReader, contentLength));
 			}
 
-			String url = httpRequest.getRequestLine().getPath();
-			if (url.startsWith("/user/create")) {
+			String path = httpRequest.getRequestLine().getPath();
+			if (path.startsWith("/user/create")) {
 				Map<String, String> paramMap = httpRequest.getParamMap();
 
 				User user = new User(paramMap.get("userId"), paramMap.get("password"), paramMap.get("name"), paramMap.get("email"));
 				DataBase.addUser(user);
 
-				url = "/index.html";
+				DataOutputStream dos = new DataOutputStream(out);
+				response302Header(dos, "/index.html");
+
+				return;
 			}
 
 			DataOutputStream dos = new DataOutputStream(out);
-			byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+			byte[] body = Files.readAllBytes(new File("./webapp" + path).toPath());
 			response200Header(dos, body.length);
 			responseBody(dos, body);
+		} catch (IOException e) {
+			log.error(e.getMessage());
+		}
+	}
+
+	private void response302Header(DataOutputStream dos, String path) {
+		try {
+			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+			dos.writeBytes("Location: " + path + "\r\n");
+			dos.writeBytes("\r\n");
 		} catch (IOException e) {
 			log.error(e.getMessage());
 		}
