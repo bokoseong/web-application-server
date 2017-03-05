@@ -65,16 +65,32 @@ public class RequestHandler extends Thread {
 			}
 
 			String path = httpRequest.getRequestLine().getPath();
-			if (path.startsWith("/user/create")) {
+			if ("/user/create".startsWith(path)) {
 				Map<String, String> paramMap = httpRequest.getParamMap();
 
 				User user = new User(paramMap.get("userId"), paramMap.get("password"), paramMap.get("name"), paramMap.get("email"));
 				DataBase.addUser(user);
 
-				DataOutputStream dos = new DataOutputStream(out);
-				response302Header(dos, "/index.html");
-
+				response302Header(out, "/index.html");
 				return;
+
+			}
+
+			if ("/user/login".startsWith(path)) {
+				Map<String, String> paramMap = httpRequest.getParamMap();
+
+				User user = DataBase.findUserById(paramMap.get("userId"));
+				if (user == null) {
+					responseLoginFail(out);
+					return;
+				}
+
+				if (user.getPassword().equals(paramMap.get("password"))) {
+					responseLoginSuccess(out);
+					return;
+				}
+
+				responseLoginFail(out);
 			}
 
 			DataOutputStream dos = new DataOutputStream(out);
@@ -86,7 +102,35 @@ public class RequestHandler extends Thread {
 		}
 	}
 
-	private void response302Header(DataOutputStream dos, String path) {
+	private void responseLoginSuccess(OutputStream out) {
+		DataOutputStream dos = new DataOutputStream(out);
+
+		try {
+			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+			dos.writeBytes("Location: /index.html\r\n");
+			dos.writeBytes("Set-Cookie: logined=true\r\n");
+			dos.writeBytes("\r\n");
+		} catch (IOException e) {
+			log.error(e.getMessage());
+		}
+	}
+
+	private void responseLoginFail(OutputStream out) throws IOException {
+		DataOutputStream dos = new DataOutputStream(out);
+
+		byte[] body = Files.readAllBytes(new File("./webapp/user/login_failed.html").toPath());
+		dos.writeBytes("HTTP/1.1 200 OK \r\n");
+		dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+		dos.writeBytes("Content-Length: " + body.length + "\r\n");
+		dos.writeBytes("Set-Cookie: logined=false");
+		dos.writeBytes("\r\n");
+
+		responseBody(dos, body);
+	}
+
+	private void response302Header(OutputStream out, String path) {
+		DataOutputStream dos = new DataOutputStream(out);
+
 		try {
 			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
 			dos.writeBytes("Location: " + path + "\r\n");
