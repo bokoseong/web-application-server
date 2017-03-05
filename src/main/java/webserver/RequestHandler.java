@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -65,7 +67,7 @@ public class RequestHandler extends Thread {
 			}
 
 			String path = httpRequest.getRequestLine().getPath();
-			if ("/user/create".startsWith(path)) {
+			if ("/user/create".equals(path)) {
 				Map<String, String> paramMap = httpRequest.getParamMap();
 
 				User user = new User(paramMap.get("userId"), paramMap.get("password"), paramMap.get("name"), paramMap.get("email"));
@@ -73,10 +75,9 @@ public class RequestHandler extends Thread {
 
 				response302Header(out, "/index.html");
 				return;
-
 			}
 
-			if ("/user/login".startsWith(path)) {
+			if ("/user/login".equals(path)) {
 				Map<String, String> paramMap = httpRequest.getParamMap();
 
 				User user = DataBase.findUserById(paramMap.get("userId"));
@@ -91,6 +92,32 @@ public class RequestHandler extends Thread {
 				}
 
 				responseLoginFail(out);
+				return;
+			}
+
+			if ("/user/list".equals(path)) {
+				Map<String, String> cookies = HttpRequestUtils.parseCookies(httpRequest.getHeaderItem("Cookie"));
+
+				if (!Boolean.parseBoolean(cookies.get("logined"))) {
+					response302Header(out, "/login.html");
+					return;
+				}
+
+				//StringBuilder로 사용자 목록 출력
+				Collection<User> userList = DataBase.findAll();
+
+				StringBuilder bodyString = new StringBuilder();
+				for (User user : userList) {
+					bodyString.append("<p>");
+					bodyString.append(user);
+					bodyString.append("</p>");
+				}
+
+				byte[] body = bodyString.toString().getBytes();
+				DataOutputStream dos = new DataOutputStream(out);
+				response200Header(dos, body.length);
+				responseBody(dos, body);
+				return;
 			}
 
 			DataOutputStream dos = new DataOutputStream(out);
