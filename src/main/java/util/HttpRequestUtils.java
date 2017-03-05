@@ -1,7 +1,6 @@
 package util;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -9,17 +8,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
 public class HttpRequestUtils {
-    public static Map<String, String> parseRequestLine(String requestLine) {
-        String[] tokens = requestLine.split(" ");
-
-        Map<String, String> requestMap = Maps.newHashMap();
-        requestMap.put("httpMethod", tokens[0]);
-        requestMap.put("requestURL", tokens[1]);
-        requestMap.put("httpVersion", tokens[2]);
-
-        return requestMap;
-    }
-
     /**
      * @param queryString
      *            URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
