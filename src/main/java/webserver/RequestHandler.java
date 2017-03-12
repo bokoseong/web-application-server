@@ -10,18 +10,14 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-
 import db.DataBase;
 import model.HttpMethod;
 import model.HttpRequest;
-import model.RequestLine;
 import model.User;
 import util.HttpRequestUtils;
 import util.IOUtils;
@@ -66,6 +62,8 @@ public class RequestHandler extends Thread {
 				httpRequest.setBodyParamMap(IOUtils.readData(bufferedReader, contentLength));
 			}
 
+			DataOutputStream dos = new DataOutputStream(out);
+			String contentType = "text/html";
 			String path = httpRequest.getRequestLine().getPath();
 			if ("/user/create".equals(path)) {
 				Map<String, String> paramMap = httpRequest.getParamMap();
@@ -73,7 +71,7 @@ public class RequestHandler extends Thread {
 				User user = new User(paramMap.get("userId"), paramMap.get("password"), paramMap.get("name"), paramMap.get("email"));
 				DataBase.addUser(user);
 
-				response302Header(out, "/index.html");
+				response302Header(dos, "/index.html");
 				return;
 			}
 
@@ -82,16 +80,16 @@ public class RequestHandler extends Thread {
 
 				User user = DataBase.findUserById(paramMap.get("userId"));
 				if (user == null) {
-					responseLoginFail(out);
+					responseLoginFail(dos);
 					return;
 				}
 
 				if (user.getPassword().equals(paramMap.get("password"))) {
-					responseLoginSuccess(out);
+					responseLoginSuccess(dos);
 					return;
 				}
 
-				responseLoginFail(out);
+				responseLoginFail(dos);
 				return;
 			}
 
@@ -99,7 +97,7 @@ public class RequestHandler extends Thread {
 				Map<String, String> cookies = HttpRequestUtils.parseCookies(httpRequest.getHeaderItem("Cookie"));
 
 				if (!Boolean.parseBoolean(cookies.get("logined"))) {
-					response302Header(out, "/login.html");
+					response302Header(dos, "/login.html");
 					return;
 				}
 
@@ -114,24 +112,24 @@ public class RequestHandler extends Thread {
 				}
 
 				byte[] body = bodyString.toString().getBytes();
-				DataOutputStream dos = new DataOutputStream(out);
-				response200Header(dos, body.length);
+				response200Header(dos, body.length, contentType);
 				responseBody(dos, body);
 				return;
 			}
 
-			DataOutputStream dos = new DataOutputStream(out);
+			if (path.endsWith(".css")) {
+				contentType = "text/css";
+			}
+
 			byte[] body = Files.readAllBytes(new File("./webapp" + path).toPath());
-			response200Header(dos, body.length);
+			response200Header(dos, body.length, contentType);
 			responseBody(dos, body);
 		} catch (IOException e) {
 			log.error(e.getMessage());
 		}
 	}
 
-	private void responseLoginSuccess(OutputStream out) {
-		DataOutputStream dos = new DataOutputStream(out);
-
+	private void responseLoginSuccess(DataOutputStream dos) {
 		try {
 			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
 			dos.writeBytes("Location: /index.html\r\n");
@@ -142,22 +140,18 @@ public class RequestHandler extends Thread {
 		}
 	}
 
-	private void responseLoginFail(OutputStream out) throws IOException {
-		DataOutputStream dos = new DataOutputStream(out);
-
-		byte[] body = Files.readAllBytes(new File("./webapp/user/login_failed.html").toPath());
-		dos.writeBytes("HTTP/1.1 200 OK \r\n");
-		dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
-		dos.writeBytes("Content-Length: " + body.length + "\r\n");
-		dos.writeBytes("Set-Cookie: logined=false");
-		dos.writeBytes("\r\n");
-
-		responseBody(dos, body);
+	private void responseLoginFail(DataOutputStream dos) {
+		try {
+			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+			dos.writeBytes("Location: /user/login_failed.html\r\n");
+			dos.writeBytes("Set-Cookie: logined=false");
+			dos.writeBytes("\r\n");
+		} catch (IOException e) {
+			log.error(e.getMessage());
+		}
 	}
 
-	private void response302Header(OutputStream out, String path) {
-		DataOutputStream dos = new DataOutputStream(out);
-
+	private void response302Header(DataOutputStream dos, String path) {
 		try {
 			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
 			dos.writeBytes("Location: " + path + "\r\n");
@@ -167,10 +161,10 @@ public class RequestHandler extends Thread {
 		}
 	}
 
-	private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+	private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
 		try {
 			dos.writeBytes("HTTP/1.1 200 OK \r\n");
-			dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+			dos.writeBytes("Content-Type: " + contentType + ";charset=utf-8\r\n");
 			dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
 			dos.writeBytes("\r\n");
 		} catch (IOException e) {
