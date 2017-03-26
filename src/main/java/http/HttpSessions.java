@@ -8,6 +8,8 @@ import com.google.common.collect.Maps;
  * @author hoseong
  */
 public class HttpSessions {
+	public static final String SESSION_ID = "JSESSIONID";
+
 	private static Map<String, HttpSession> httpSessions = Maps.newHashMap();;
 
 	public static HttpSession getHttpSession(String sessionId) {

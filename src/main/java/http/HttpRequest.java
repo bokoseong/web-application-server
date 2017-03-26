@@ -1,5 +1,7 @@
 package http;
 
+import static http.HttpSessions.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,6 +77,6 @@ public class HttpRequest {
 	}
 
 	public HttpSession getSession() {
-    	return HttpSessions.getHttpSession(getCookies().getCookie("JSESSIONID"));
+    	return HttpSessions.getHttpSession(getCookies().getCookie(SESSION_ID));
 	}
 }

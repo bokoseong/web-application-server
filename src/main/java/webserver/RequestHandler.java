@@ -1,5 +1,7 @@
 package webserver;
 
+import static http.HttpSessions.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,8 +17,6 @@ import http.HttpResponse;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
-
-    private static final String SESSION_ID = "JSESSIONID";
 
     private Socket connection;
 
