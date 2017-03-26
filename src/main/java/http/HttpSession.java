@@ -12,7 +12,8 @@ public class HttpSession {
 
 	private Map<String, Object> attributes;
 
-	public HttpSession() {
+	public HttpSession(String sessionId) {
+		this.id = sessionId;
 		attributes = Maps.newHashMap();
 	}
 
@@ -22,10 +23,6 @@ public class HttpSession {
 	 */
 	public String getId() {
 		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
 	}
 
 	/**
