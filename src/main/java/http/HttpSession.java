@@ -14,7 +14,7 @@ public class HttpSession {
 
 	public HttpSession(String sessionId) {
 		this.id = sessionId;
-		attributes = Maps.newHashMap();
+		this.attributes = Maps.newHashMap();
 	}
 
 	/**
@@ -55,6 +55,6 @@ public class HttpSession {
 	 * 현재 세션에 저장되어 있는 모든 값을 삭제
 	 */
 	public void invalidate() {
-		attributes.clear();
+		HttpSessions.remove(id);
 	}
 }

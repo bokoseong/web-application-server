@@ -21,4 +21,8 @@ public class HttpSessions {
 		httpSessions.put(sessionId, httpSession);
 		return httpSession;
 	}
+
+	public static void remove(String sessionId) {
+		httpSessions.remove(sessionId);
+	}
 }
